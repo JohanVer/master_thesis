@@ -99,7 +99,7 @@ private:
 
     std::set<size_t> filter_set_;
 
-    std::set<std::pair<size_t, size_t> > last_area_;
+    std::set<std::pair<unsigned int, unsigned int> > last_area_;
 
     size_t draw_thickness_;
     bool delete_;

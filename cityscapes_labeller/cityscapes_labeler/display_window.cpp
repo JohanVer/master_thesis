@@ -297,7 +297,7 @@ void display_window::saveImage(const cv::Mat &labeling, size_t seq, size_t frame
 }
 
 void display_window::selectRegion(cv::Point2d point){
-    std::set<std::pair<size_t, size_t> > occ_set;
+    std::set<std::pair<unsigned int, unsigned int> > occ_set;
     manager.growNeighbors(label_image, point.x , point.y, occ_set);
 
     // Blend modified image with real image and refresh view

@@ -137,12 +137,11 @@ void cityscapes_manager::filterImageForIndex(cv::Mat &inout, const std::set<size
     }
 }
 
-void cityscapes_manager::findNeighbors(cv::Mat inout, size_t x, size_t y, std::set<std::pair<size_t, size_t> > &occ_set){
-    if(occ_set.find(std::pair<size_t, size_t>(x,y)) != occ_set.end()){
+void cityscapes_manager::findNeighbors(cv::Mat inout, size_t x, size_t y, std::set<std::pair<unsigned int, unsigned int> > &occ_set){
+    if(occ_set.find(std::pair<unsigned int, unsigned int>(x,y)) != occ_set.end()){
         return;
     }
-
-    occ_set.insert(std::pair<size_t, size_t>(x,y));
+    occ_set.insert(std::pair<unsigned int, unsigned int>(x,y));
 
     if(x+1 < inout.cols){
         cv::Scalar pix = inout.at<uchar>(cv::Point(x+1, y));
@@ -158,6 +157,7 @@ void cityscapes_manager::findNeighbors(cv::Mat inout, size_t x, size_t y, std::s
         }
     }
 
+
     if(y+1 < inout.rows){
         cv::Scalar pix = inout.at<uchar>(cv::Point(x, y+1));
         if(pix[0] == 0){
@@ -171,9 +171,10 @@ void cityscapes_manager::findNeighbors(cv::Mat inout, size_t x, size_t y, std::s
             findNeighbors(inout, x, y-1, occ_set);
         }
     }
+
 }
 
-void cityscapes_manager::fillSet(cv::Mat &out, std::set<std::pair<size_t, size_t> > &occ_set, uchar fill_val){
+void cityscapes_manager::fillSet(cv::Mat &out, std::set<std::pair<unsigned int, unsigned int> > &occ_set, uchar fill_val){
     for(auto i = occ_set.begin(); i != occ_set.end(); i++){
         size_t x = i->first;
         size_t y = i->second;
@@ -181,7 +182,7 @@ void cityscapes_manager::fillSet(cv::Mat &out, std::set<std::pair<size_t, size_t
     }
 }
 
-void cityscapes_manager::growNeighbors(cv::Mat &inout, size_t x, size_t y, std::set<std::pair<size_t, size_t> > &occ_set){
+void cityscapes_manager::growNeighbors(cv::Mat &inout, size_t x, size_t y, std::set<std::pair<unsigned int, unsigned int> > &occ_set){
     findNeighbors(inout, x, y, occ_set);
     fillSet(inout, occ_set, 255);
 }
