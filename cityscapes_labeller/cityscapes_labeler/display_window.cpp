@@ -29,6 +29,9 @@ void display_window::displayLabelAndSeq(const boost::filesystem::path &label_img
         manager.filterImageForIndex(label_image, filter_set);
     }
 
+    label_image_org_ = cv::imread(label_img.string().c_str(), 0);
+    manager.filterImageForIndex(label_image_org_, filter_set);
+
     seq_image = cv::imread(seq_img.string().c_str());
     cv::cvtColor(seq_image, seq_image, CV_BGR2RGB);
 
@@ -183,26 +186,7 @@ display_window::display_window(QWidget *parent) :
         ui->city_select->addItem(city);
     }
 
-    /*if(!manager.checkTypeAndSplit(base_path, type, split)){ std::cerr << "Type or split does not exist\n";};
-    if(!manager.checkTypeAndSplit(base_path, seq_type, split)){ std::cerr << "Type or split does not exist\n";};
-
-    // Get cities
-    manager.listAllDirsInPath(base_path + type + "/" + split , cities);
-
-    const boost::filesystem::path &city_path = cities.front();
-    current_city = city_path.filename().string();
-    std::cout << "Switching to city: " << current_city << std::endl;
-    seq_path_ = boost::filesystem::path(base_path + seq_type +"/" + split + "/" + current_city + "/");
-    loadFiles(city_path, seq_path_);
-
-    // Get next labeled image
-    size_t seq, frame_id;
-    boost::filesystem::path img_path;
-    getNextLabelImg(seq, frame_id, img_path);
-
-    boost::filesystem::path seq_img_path = getSeqImage(seq, frame_id, current_city, seq_path_);
-    displayLabelAndSeq(img_path, seq_img_path, filter_set_);
-    */
+    start(cities.front().filename().string(), split);
 }
 
 display_window::~display_window()
@@ -357,4 +341,10 @@ void display_window::on_saveButton_clicked()
 void display_window::on_city_select_activated(const QString &arg1)
 {
     start(arg1.toStdString(), split);
+}
+
+void display_window::on_reset_button_clicked()
+{
+ label_image = label_image_org_.clone();
+ updateLabelImage();
 }

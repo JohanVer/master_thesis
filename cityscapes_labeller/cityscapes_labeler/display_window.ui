@@ -75,6 +75,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="reset_button">
+          <property name="text">
+           <string>Reset</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QComboBox" name="comboBox">
           <item>
            <property name="text">

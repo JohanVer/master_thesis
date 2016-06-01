@@ -73,9 +73,12 @@ private slots:
 
     void on_city_select_activated(const QString &arg1);
 
+    void on_reset_button_clicked();
+
 private:
     Ui::display_window *ui;
 
+    cv::Mat label_image_org_;
     cv::Mat label_image;
     cv::Mat seq_image;
 
