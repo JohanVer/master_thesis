@@ -32,6 +32,7 @@ public:
 
 Q_SIGNALS:
 void click(cv::Point2d point);
+void rightClick(cv::Point2d point);
 
 public Q_SLOTS:
 void mousePressEvent(QGraphicsSceneMouseEvent *event);
@@ -39,6 +40,8 @@ void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
 void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
 
 private:
+
+bool pressed_;
 };
 
 class CityScapesViewer: public QGraphicsView {

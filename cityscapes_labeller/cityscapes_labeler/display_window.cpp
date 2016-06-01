@@ -24,10 +24,12 @@ void display_window::loadFiles(const boost::filesystem::path &city, const boost:
 
 void display_window::displayLabelAndSeq(const boost::filesystem::path &label_img, const boost::filesystem::path &seq_img, const std::set<size_t> filter_set){
     // Filter label image
-    cv::Mat label_image = cv::imread(label_img.string().c_str(), 0);
-    manager.filterImageForIndex(label_image, filter_set);
+    if(!loadLabelIfAvailable(current_sequence_, label_frame_id_, current_city, label_image)){
+        label_image = cv::imread(label_img.string().c_str(), 0);
+        manager.filterImageForIndex(label_image, filter_set);
+    }
 
-    cv::Mat seq_image = cv::imread(seq_img.string().c_str());
+    seq_image = cv::imread(seq_img.string().c_str());
     cv::cvtColor(seq_image, seq_image, CV_BGR2RGB);
 
     // Display open cv image on view
@@ -45,6 +47,7 @@ bool display_window::getNextLabelImg(size_t &seq, size_t &frame_id, boost::files
         if(img_type.compare("labelIds.png") == 0){
             img_path = labelled_files.at(global_current_frame_);
             current_seq_frame_id_ = frame_id;
+            label_frame_id_ = frame_id;
             current_sequence_ = seq;
             return true;
         }
@@ -60,6 +63,7 @@ bool display_window::getPrevLabelImg(size_t &seq, size_t &frame_id, boost::files
         if(img_type.compare("labelIds.png") == 0){
             img_path = labelled_files.at(global_current_frame_);
             current_seq_frame_id_ = frame_id;
+            label_frame_id_ = frame_id;
             current_sequence_ = seq;
             return true;
         }
@@ -73,11 +77,13 @@ void display_window::displayOpenCvImage(const cv::Mat &image, enum Ui::VIEW view
     switch(view_select){
 
     case Ui::VIEW::TOP:
+        scene_top_.clear();
         top_img_item_ = new QGraphicsPixmapItem(QPixmap::fromImage(qt_image));
         scene_top_.addItem(top_img_item_);
         break;
 
     case Ui::VIEW::BOTTOM:
+        scene_bottom_.clear();
         QImage img_scaled = qt_image.scaled(ui->viewBottom->width(), ui->viewBottom->height(), Qt::IgnoreAspectRatio);
         bottom_img_item_ = new QGraphicsPixmapItem(QPixmap::fromImage(img_scaled));
         scene_bottom_.addItem(bottom_img_item_);
@@ -93,11 +99,63 @@ boost::filesystem::path display_window::getSeqImage(size_t seq, size_t frame_id,
     return seq_img_path;
 }
 
+bool display_window::getCityIndex(const std::string &city_name, size_t &index){
+    for(auto i = 0; i < cities.size(); i++){
+        if(cities.at(i).filename().string().compare(city_name) == 0){
+            index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+void display_window::start(const std::string &city, const std::string &split){
+
+    delete_ = true;
+    cities.clear();
+    labelled_files.clear();
+    seq_files.clear();
+    global_current_frame_ = 0;
+    current_seq_frame_id_ = 0;
+    current_sequence_ = 0;
+    label_frame_id_= 0;
+    scene_top_.clear();
+    scene_bottom_.clear();
+    last_area_.clear();
+
+    if(!manager.checkTypeAndSplit(base_path, type, split)){ std::cerr << "Type or split does not exist\n";};
+    if(!manager.checkTypeAndSplit(base_path, seq_type, split)){ std::cerr << "Type or split does not exist\n";};
+
+    // Get cities
+    manager.listAllDirsInPath(base_path + type + "/" + split , cities);
+
+    size_t city_index = 0;
+    if(!getCityIndex(city,city_index)){
+        std::cerr << "Could not load city: " << city << std::endl;
+        return;
+    }
+    const boost::filesystem::path &city_path = cities.at(city_index);
+    current_city = city_path.filename().string();
+    std::cout << "Switching to city: " << current_city << std::endl;
+
+    seq_path_ = boost::filesystem::path(base_path + seq_type +"/" + split + "/" + current_city + "/");
+    loadFiles(city_path, seq_path_);
+
+    // Get next labeled image
+    size_t seq, frame_id;
+    boost::filesystem::path img_path;
+    getNextLabelImg(seq, frame_id, img_path);
+
+    boost::filesystem::path seq_img_path = getSeqImage(seq, frame_id, current_city, seq_path_);
+    displayLabelAndSeq(img_path, seq_img_path, filter_set_);
+}
+
 display_window::display_window(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::display_window),
     global_current_frame_(0),
-    filter_set_(cars, cars+3)
+    filter_set_(cars, cars+3),
+    draw_thickness_(10)
 {
     ui->setupUi(this);
 
@@ -109,7 +167,23 @@ display_window::display_window(QWidget *parent) :
     connect(&scene_top_, SIGNAL(click(cv::Point2d)), this,
             SLOT(selectRegion(cv::Point2d)));
 
+    connect(&scene_top_, SIGNAL(rightClick(cv::Point2d)), this,
+            SLOT(eraseRegion(cv::Point2d)));
+
+    delete_ = true;
+
     if(!manager.checkTypeAndSplit(base_path, type, split)){ std::cerr << "Type or split does not exist\n";};
+    if(!manager.checkTypeAndSplit(base_path, seq_type, split)){ std::cerr << "Type or split does not exist\n";};
+
+    // Get cities
+    manager.listAllDirsInPath(base_path + type + "/" + split , cities);
+
+    for(auto i = 0; i < cities.size(); i++){
+        QString city = QString::fromStdString(cities.at(i).filename().string());
+        ui->city_select->addItem(city);
+    }
+
+    /*if(!manager.checkTypeAndSplit(base_path, type, split)){ std::cerr << "Type or split does not exist\n";};
     if(!manager.checkTypeAndSplit(base_path, seq_type, split)){ std::cerr << "Type or split does not exist\n";};
 
     // Get cities
@@ -128,11 +202,18 @@ display_window::display_window(QWidget *parent) :
 
     boost::filesystem::path seq_img_path = getSeqImage(seq, frame_id, current_city, seq_path_);
     displayLabelAndSeq(img_path, seq_img_path, filter_set_);
+    */
 }
 
 display_window::~display_window()
 {
     delete ui;
+}
+
+void display_window::updateLabelImage(){
+    cv::Mat blended_image;
+    manager.blendImages(label_image, seq_image, blended_image, 0.33);
+    displayOpenCvImage(blended_image, Ui::VIEW::TOP);
 }
 
 void display_window::keyPressEvent(QKeyEvent * event){
@@ -161,7 +242,6 @@ void display_window::keyPressEvent(QKeyEvent * event){
             displayOpenCvImage(seq_image, Ui::VIEW::BOTTOM);
         }
     }
-
     if( event->key() == Qt::Key_8 )
     {
         size_t seq, frame_id;
@@ -181,8 +261,100 @@ void display_window::keyPressEvent(QKeyEvent * event){
             displayLabelAndSeq(img_path, seq_img_path, filter_set_);
         }
     }
+
+    if(event->key() == Qt::Key_Minus){
+        if(!last_area_.empty()){
+            manager.fillSet(label_image, last_area_, 0);
+            updateLabelImage();
+        }
+    }
+}
+
+bool display_window::loadLabelIfAvailable(size_t seq, size_t frame_id, const std::string &city, cv::Mat &out)
+{
+    if(isLabelFileAvailable(seq, frame_id, city)){
+        ui->labelled_indicator->setStyleSheet("QLabel { background-color : green; color : blue; }");
+        loadMotionLabel(seq, frame_id, city, out);
+        return true;
+
+    }else{
+        ui->labelled_indicator->setStyleSheet("QLabel { background-color : white; color : blue; }");
+        return false;
+    }
+}
+
+bool display_window::isLabelFileAvailable(size_t seq, size_t frame_id, const std::string &city){
+    const std::string file_name = city + "_" +std::to_string(seq) + "_" + std::to_string(frame_id) + ".png";
+    const std::string save_path = base_path + "/motion_data/" + split + "/" + city +"/";
+    return manager.doesFileExist(save_path + file_name);
+}
+
+void display_window::loadMotionLabel(size_t seq, size_t frame_id, const std::string &city, cv::Mat &out){
+    const std::string file_name = city + "_" +std::to_string(seq) + "_" + std::to_string(frame_id) + ".png";
+    const std::string save_path = base_path + "/motion_data/" + split + "/" + city +"/";
+    out = cv::imread(save_path + file_name,0);
+}
+
+void display_window::saveImage(const cv::Mat &labeling, size_t seq, size_t frame_id, const std::string &city){
+    const std::string file_name = city + "_" +std::to_string(seq) + "_" + std::to_string(frame_id) + ".png";
+
+    const std::string save_path = base_path + "/motion_data/" + split + "/" + city +"/";
+    boost::filesystem::path dir(save_path);
+    if(boost::filesystem::create_directories(dir)) {
+        std::cout << "Created save folder" << "\n";
+    }
+
+    imwrite( save_path + file_name, labeling );
+
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Saved");
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
 }
 
 void display_window::selectRegion(cv::Point2d point){
-    std::cerr << "Selected Point : " << point << std::endl;
+    std::set<std::pair<size_t, size_t> > occ_set;
+    manager.growNeighbors(label_image, point.x , point.y, occ_set);
+
+    // Blend modified image with real image and refresh view
+    updateLabelImage();
+
+    last_area_ = occ_set;
+}
+
+void display_window::eraseRegion(cv::Point2d point){
+
+    if(delete_){
+        cv::Scalar white (255, 255, 255);
+        cv::circle(label_image, point, draw_thickness_, white, CV_FILLED);
+    }else{
+        cv::Scalar white (0, 0, 0);
+        cv::circle(label_image, point, draw_thickness_, white, CV_FILLED);
+    }
+
+    updateLabelImage();
+}
+
+void display_window::on_comboBox_activated(const QString &arg1)
+{
+    if(arg1 == "Delete"){
+        delete_ = true;
+    }else if(arg1 == "Add"){
+        delete_ = false;
+    }
+}
+
+void display_window::on_draw_thickness_slider_sliderMoved(int position)
+{
+    draw_thickness_ = position;
+}
+
+void display_window::on_saveButton_clicked()
+{
+    saveImage(label_image, current_sequence_, label_frame_id_, current_city);
+}
+
+void display_window::on_city_select_activated(const QString &arg1)
+{
+    start(arg1.toStdString(), split);
 }

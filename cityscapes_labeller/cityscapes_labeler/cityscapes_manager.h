@@ -47,7 +47,9 @@ public:
 
     void findNeighbors(cv::Mat inout, size_t x, size_t y, std::set<std::pair<size_t, size_t> > &occ_set);
 
-    void growNeighbors(cv::Mat &inout, size_t x, size_t y);
+    void growNeighbors(cv::Mat &inout, size_t x, size_t y, std::set<std::pair<std::size_t, std::size_t> > &occ_set);
+
+    void fillSet(cv::Mat &out, std::set<std::pair<size_t, size_t> > &occ_set, uchar fill_val);
 
 };
 

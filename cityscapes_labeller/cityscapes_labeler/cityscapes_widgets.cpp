@@ -4,26 +4,34 @@ namespace cityscapes_labeller{
 
 CityScapesScene::CityScapesScene(QWidget *parent) :
     QGraphicsScene(parent) {
+    pressed_ = false;
 
 }
 
 void CityScapesScene::mousePressEvent(QGraphicsSceneMouseEvent* event){
+    size_t x = event->scenePos().x();
+    size_t y = event->scenePos().y();
+    cv::Point2d point(x,y);
     if(event->button() == Qt::LeftButton){
-        size_t x = event->scenePos().x();
-        size_t y = event->scenePos().y();
-
-        cv::Point2d point(x,y);
         Q_EMIT click(point);
+    }else if(event->button() == Qt::RightButton){
+        pressed_ = true;
+        Q_EMIT rightClick(point);
     }
 }
 
 void CityScapesScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event){
-
+    if(pressed_){
+        size_t x = event->scenePos().x();
+        size_t y = event->scenePos().y();
+        cv::Point2d point(x,y);
+        Q_EMIT rightClick(point);
+    }
 
 }
 
 void CityScapesScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event){
-
+    if(pressed_) pressed_ = false;
 
 }
 
@@ -57,20 +65,5 @@ void CityScapesViewer::wheelEvent(QWheelEvent * event) {
         }
     }
 }
-
-/*
-void CityScapesViewer::keyPressEvent(QKeyEvent *event)
-{
-    if( event->key() == Qt::Key_Right )
-    {
-        std::cerr << "Right key pressed...\n";
-    }
-
-    if( event->key() == Qt::Key_A )
-    {
-        std::cerr << "A key pressed...\n";
-    }
-}
-*/
 
 }

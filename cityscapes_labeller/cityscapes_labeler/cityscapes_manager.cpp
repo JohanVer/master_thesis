@@ -105,7 +105,6 @@ bool cityscapes_manager::genCorrSeqImageName(size_t seq, size_t frame_id, const 
 bool cityscapes_manager::doesFileExist(const std::string &path){
     if ( !boost::filesystem::exists( path) )
     {
-        std::cerr << "Can't find corresponding seq file!" << std::endl;
         return false;
     }
     return true;
@@ -145,45 +144,46 @@ void cityscapes_manager::findNeighbors(cv::Mat inout, size_t x, size_t y, std::s
 
     occ_set.insert(std::pair<size_t, size_t>(x,y));
 
-    if(x+1 < inout.rows){
-        cv::Scalar pix = inout.at<uchar>(cv::Point(y, x+1));
+    if(x+1 < inout.cols){
+        cv::Scalar pix = inout.at<uchar>(cv::Point(x+1, y));
         if(pix[0] == 0){
             findNeighbors(inout, x+1, y, occ_set);
         }
     }
 
     if(x > 0){
-        cv::Scalar pix = inout.at<uchar>(cv::Point(y, x-1));
+        cv::Scalar pix = inout.at<uchar>(cv::Point(x-1, y));
         if(pix[0] == 0){
             findNeighbors(inout, x-1, y, occ_set);
         }
     }
 
-    if(y+1 < inout.cols){
-        cv::Scalar pix = inout.at<uchar>(cv::Point(y+1, x));
+    if(y+1 < inout.rows){
+        cv::Scalar pix = inout.at<uchar>(cv::Point(x, y+1));
         if(pix[0] == 0){
             findNeighbors(inout, x, y+1, occ_set);
         }
     }
 
     if(y >0){
-        cv::Scalar pix = inout.at<uchar>(cv::Point(y-1, x));
+        cv::Scalar pix = inout.at<uchar>(cv::Point(x, y-1));
         if(pix[0] == 0){
             findNeighbors(inout, x, y-1, occ_set);
         }
     }
 }
 
-void cityscapes_manager::growNeighbors(cv::Mat &inout, size_t x, size_t y){
-    std::set<std::pair<size_t, size_t> > occ_set;
-    findNeighbors(inout, x, y, occ_set);
+void cityscapes_manager::fillSet(cv::Mat &out, std::set<std::pair<size_t, size_t> > &occ_set, uchar fill_val){
     for(auto i = occ_set.begin(); i != occ_set.end(); i++){
         size_t x = i->first;
         size_t y = i->second;
-        inout.at<uchar>(y, x) = 255;
-        std::cout << "Grow point: " << x << " / " << y << std::endl;
+        out.at<uchar>(y, x) = fill_val;
     }
 }
 
+void cityscapes_manager::growNeighbors(cv::Mat &inout, size_t x, size_t y, std::set<std::pair<size_t, size_t> > &occ_set){
+    findNeighbors(inout, x, y, occ_set);
+    fillSet(inout, occ_set, 255);
+}
 
 }
