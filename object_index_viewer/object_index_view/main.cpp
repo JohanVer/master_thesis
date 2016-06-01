@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <set>
 
-#define SAVE
-//#define SHOW
+//#define SAVE
+#define SHOW
 
 using namespace cimg_library;
 
