@@ -42,51 +42,71 @@ void display_window::displayLabelAndSeq(const boost::filesystem::path &label_img
     displayOpenCvImage(seq_image, Ui::VIEW::BOTTOM);
 }
 
+void display_window::listAllLabelImages(const std::vector<boost::filesystem::path> &files, std::vector<boost::filesystem::path> &id_files){
+    for(auto i = 0; i < files.size(); i++){
+        std::string img_type;
+        size_t seq, frame_id;
+        manager.separateFileName(labelled_files.at(i).filename().string(), seq, frame_id, img_type);
+        if(img_type.compare("labelIds.png") == 0){
+
+            id_files.push_back(labelled_files.at(i));
+        }
+    }
+}
+
 bool display_window::getNextLabelImg(size_t &seq, size_t &frame_id, boost::filesystem::path &img_path){
-    while(global_current_frame_ < labelled_files.size()){
+    if(global_current_frame_ < labelled_files_ids__.size()){
         global_current_frame_++;
         std::string img_type;
-        manager.separateFileName(labelled_files.at(global_current_frame_).filename().string(), seq, frame_id, img_type);
-        if(img_type.compare("labelIds.png") == 0){
-            img_path = labelled_files.at(global_current_frame_);
-            current_seq_frame_id_ = frame_id;
-            label_frame_id_ = frame_id;
-            current_sequence_ = seq;
-            return true;
-        }
+        manager.separateFileName(labelled_files_ids__.at(global_current_frame_).filename().string(), seq, frame_id, img_type);
+
+        img_path = labelled_files_ids__.at(global_current_frame_);
+        current_seq_frame_id_ = frame_id;
+        label_frame_id_ = frame_id;
+        current_sequence_ = seq;
+        return true;
+
     }
     return false;
 }
 
 bool display_window::getPrevLabelImg(size_t &seq, size_t &frame_id, boost::filesystem::path &img_path){
-    while(global_current_frame_ > 0){
+    if(global_current_frame_ > 0){
         global_current_frame_--;
         std::string img_type;
-        manager.separateFileName(labelled_files.at(global_current_frame_).filename().string(), seq, frame_id, img_type);
-        if(img_type.compare("labelIds.png") == 0){
-            img_path = labelled_files.at(global_current_frame_);
-            current_seq_frame_id_ = frame_id;
-            label_frame_id_ = frame_id;
-            current_sequence_ = seq;
-            return true;
-        }
+        manager.separateFileName(labelled_files_ids__.at(global_current_frame_).filename().string(), seq, frame_id, img_type);
+
+        img_path = labelled_files_ids__.at(global_current_frame_);
+        current_seq_frame_id_ = frame_id;
+        label_frame_id_ = frame_id;
+        current_sequence_ = seq;
+        return true;
+
     }
     return false;
 }
 
 void display_window::displayOpenCvImage(const cv::Mat &image, enum Ui::VIEW view_select){
+
     QImage qt_image= QImage((uchar*) image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
 
     switch(view_select){
 
     case Ui::VIEW::TOP:
-        scene_top_.clear();
+        if(top_img_item_ != NULL) delete top_img_item_;
+        top_img_item_ = NULL;
+        qDeleteAll(scene_top_.items());
+
         top_img_item_ = new QGraphicsPixmapItem(QPixmap::fromImage(qt_image));
         scene_top_.addItem(top_img_item_);
         break;
 
     case Ui::VIEW::BOTTOM:
-        scene_bottom_.clear();
+
+        if(bottom_img_item_ != NULL) delete bottom_img_item_;
+        bottom_img_item_ = NULL;
+        qDeleteAll(scene_bottom_.items());
+
         QImage img_scaled = qt_image.scaled(ui->viewBottom->width(), ui->viewBottom->height(), Qt::IgnoreAspectRatio);
         bottom_img_item_ = new QGraphicsPixmapItem(QPixmap::fromImage(img_scaled));
         scene_bottom_.addItem(bottom_img_item_);
@@ -118,13 +138,10 @@ void display_window::start(const std::string &city, const std::string &split){
     cities.clear();
     labelled_files.clear();
     seq_files.clear();
-    global_current_frame_ = 0;
+    global_current_frame_ = 2;
     current_seq_frame_id_ = 0;
     current_sequence_ = 0;
-    label_frame_id_= 0;
-    scene_top_.clear();
-    scene_bottom_.clear();
-    last_area_.clear();
+    label_frame_id_= 0;       
 
     if(!manager.checkTypeAndSplit(base_path, type, split)){ std::cerr << "Type or split does not exist\n";};
     if(!manager.checkTypeAndSplit(base_path, seq_type, split)){ std::cerr << "Type or split does not exist\n";};
@@ -145,9 +162,15 @@ void display_window::start(const std::string &city, const std::string &split){
     loadFiles(city_path, seq_path_);
 
     // Get next labeled image
+    listAllLabelImages(labelled_files, labelled_files_ids__);
     size_t seq, frame_id;
     boost::filesystem::path img_path;
-    getNextLabelImg(seq, frame_id, img_path);
+    std::string img_type;
+    manager.separateFileName(labelled_files_ids__.at(global_current_frame_).filename().string(), seq, frame_id, img_type);
+    img_path = labelled_files_ids__.at(global_current_frame_);
+    current_seq_frame_id_ = frame_id;
+    label_frame_id_ = frame_id;
+    current_sequence_ = seq;
 
     boost::filesystem::path seq_img_path = getSeqImage(seq, frame_id, current_city, seq_path_);
     displayLabelAndSeq(img_path, seq_img_path, filter_set_);
@@ -160,6 +183,9 @@ display_window::display_window(QWidget *parent) :
     filter_set_(cars, cars+3),
     draw_thickness_(10)
 {
+    top_img_item_ = NULL;
+    bottom_img_item_ = NULL;
+
     ui->setupUi(this);
 
     ui->viewTop->setScene(&scene_top_);
@@ -246,12 +272,7 @@ void display_window::keyPressEvent(QKeyEvent * event){
         }
     }
 
-    if(event->key() == Qt::Key_Minus){
-        if(!last_area_.empty()){
-            manager.fillSet(label_image, last_area_, 0);
-            updateLabelImage();
-        }
-    }
+
 }
 
 bool display_window::loadLabelIfAvailable(size_t seq, size_t frame_id, const std::string &city, cv::Mat &out)
@@ -298,7 +319,8 @@ void display_window::saveImage(const cv::Mat &labeling, size_t seq, size_t frame
 
 void display_window::selectRegion(cv::Point2d point){
     std::set<std::pair<unsigned int, unsigned int> > occ_set;
-    manager.growNeighbors(label_image, point.x , point.y, occ_set);
+    //manager.growNeighbors(label_image, point.x , point.y, occ_set);
+    cv::floodFill(label_image,point,255);
 
     // Blend modified image with real image and refresh view
     updateLabelImage();
@@ -345,6 +367,6 @@ void display_window::on_city_select_activated(const QString &arg1)
 
 void display_window::on_reset_button_clicked()
 {
- label_image = label_image_org_.clone();
- updateLabelImage();
+    label_image = label_image_org_.clone();
+    updateLabelImage();
 }

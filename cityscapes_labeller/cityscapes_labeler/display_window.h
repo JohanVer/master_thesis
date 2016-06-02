@@ -2,6 +2,7 @@
 #define DISPLAY_WINDOW_H
 
 #include <QMainWindow>
+#include <QtAlgorithms>
 #include <QtGui>
 #include <QPixmap>
 #include <QPainter>
@@ -58,6 +59,7 @@ public:
     void start(const std::string &city, const std::string &split);
     bool getCityIndex(const std::string &city_name, size_t &index);
     void updateLabelImage();
+    void listAllLabelImages(const std::vector<boost::filesystem::path> &files, std::vector<boost::filesystem::path> &id_files);
 
 public Q_SLOTS:
     void selectRegion(cv::Point2d point);
@@ -85,6 +87,7 @@ private:
     cityscapes_labeller::cityscapes_manager manager;
     std::vector<boost::filesystem::path> cities;
     std::vector<boost::filesystem::path> labelled_files;
+    std::vector<boost::filesystem::path> labelled_files_ids__;
     std::vector<boost::filesystem::path> seq_files;
 
     boost::filesystem::path seq_path_;
