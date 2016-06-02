@@ -8,6 +8,19 @@ const std::string type = "gtFine";
 const std::string split = "train";
 const std::string seq_type = "leftImg8bit_sequence";
 
+void display_window::countLabelledImages(const std::string &base_path, const std::string &split, const std::string &city){
+    const std::string save_path = base_path + "/motion_data/" + split + "/" + city +"/";
+    if(!manager.doesFileExist(save_path)) return;
+    std::vector<boost::filesystem::path> list;
+    manager.listImagesInDir(save_path, list, ".png");
+
+    size_t labelled_size = list.size();
+    size_t total = labelled_files_ids__.size();
+
+    std::string text = std::to_string(labelled_size) + "/" + std::to_string(total);
+    ui->count_label->setText(QString::fromStdString(text));
+}
+
 void display_window::loadFiles(const boost::filesystem::path &city, const boost::filesystem::path &seq_dir){
     // list images in labelled dir
     labelled_files.clear();
@@ -64,6 +77,7 @@ bool display_window::getNextLabelImg(size_t &seq, size_t &frame_id, boost::files
         current_seq_frame_id_ = frame_id;
         label_frame_id_ = frame_id;
         current_sequence_ = seq;
+        ui->actual_frame->setText(QString::fromStdString(std::to_string(global_current_frame_)));
         return true;
 
     }
@@ -80,6 +94,7 @@ bool display_window::getPrevLabelImg(size_t &seq, size_t &frame_id, boost::files
         current_seq_frame_id_ = frame_id;
         label_frame_id_ = frame_id;
         current_sequence_ = seq;
+        ui->actual_frame->setText(QString::fromStdString(std::to_string(global_current_frame_)));
         return true;
 
     }
@@ -138,7 +153,7 @@ void display_window::start(const std::string &city, const std::string &split){
     cities.clear();
     labelled_files.clear();
     seq_files.clear();
-    global_current_frame_ = 2;
+    global_current_frame_ = 0;
     current_seq_frame_id_ = 0;
     current_sequence_ = 0;
     label_frame_id_= 0;       
@@ -163,6 +178,7 @@ void display_window::start(const std::string &city, const std::string &split){
 
     // Get next labeled image
     listAllLabelImages(labelled_files, labelled_files_ids__);
+
     size_t seq, frame_id;
     boost::filesystem::path img_path;
     std::string img_type;
@@ -172,8 +188,11 @@ void display_window::start(const std::string &city, const std::string &split){
     label_frame_id_ = frame_id;
     current_sequence_ = seq;
 
+    ui->actual_frame->setText(QString::fromStdString(std::to_string(global_current_frame_)));
+
     boost::filesystem::path seq_img_path = getSeqImage(seq, frame_id, current_city, seq_path_);
     displayLabelAndSeq(img_path, seq_img_path, filter_set_);
+    countLabelledImages(base_path, split, current_city);
 }
 
 display_window::display_window(QWidget *parent) :
@@ -192,6 +211,9 @@ display_window::display_window(QWidget *parent) :
     ui->viewBottom->setScene(&scene_bottom_);
     ui->viewTop->show();
     ui->viewBottom->show();
+
+    ui->count_label->setStyleSheet("QLabel { background-color : gray; color : red; }");
+    ui->actual_frame->setStyleSheet("QLabel { background-color : gray; color : blue; }");
 
     connect(&scene_top_, SIGNAL(click(cv::Point2d)), this,
             SLOT(selectRegion(cv::Point2d)));
@@ -315,6 +337,8 @@ void display_window::saveImage(const cv::Mat &labeling, size_t seq, size_t frame
     msgBox.setWindowTitle("Saved");
     msgBox.setStandardButtons(QMessageBox::Ok);
     msgBox.exec();
+
+    countLabelledImages(base_path, split, current_city);
 }
 
 void display_window::selectRegion(cv::Point2d point){

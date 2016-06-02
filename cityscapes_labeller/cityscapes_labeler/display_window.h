@@ -47,19 +47,35 @@ public:
     ~display_window();
 
     void loadFiles(const boost::filesystem::path &city, const boost::filesystem::path &seq_dir);
+
     bool getNextLabelImg(size_t &seq, size_t &frame_id, boost::filesystem::path &img_path);
+
     bool getPrevLabelImg(size_t &seq, size_t &frame_id, boost::filesystem::path &img_path);
+
     void displayOpenCvImage(const cv::Mat &image, enum Ui::VIEW view_select);
+
     boost::filesystem::path getSeqImage(size_t seq, size_t frame_id, const std::string &city, const boost::filesystem::path &seq_path);
+
     bool loadLabelIfAvailable(size_t seq, size_t frame_id, const std::string &city, cv::Mat &out);
+
     void displayLabelAndSeq(const boost::filesystem::path &label_img, const boost::filesystem::path &seq_img, const std::set<size_t> filter_set);
+
+    void countLabelledImages(const std::string &base_path, const std::string &split, const std::string &city);
+
     bool isLabelFileAvailable(size_t seq, size_t frame_id, const std::string &city);
+
     void saveImage(const cv::Mat &labeling, size_t seq, size_t frame_id, const std::string &city);
+
     void loadMotionLabel(size_t seq, size_t frame_id, const std::string &city, cv::Mat &out);
+
     void start(const std::string &city, const std::string &split);
+
     bool getCityIndex(const std::string &city_name, size_t &index);
+
     void updateLabelImage();
+
     void listAllLabelImages(const std::vector<boost::filesystem::path> &files, std::vector<boost::filesystem::path> &id_files);
+
 
 public Q_SLOTS:
     void selectRegion(cv::Point2d point);
