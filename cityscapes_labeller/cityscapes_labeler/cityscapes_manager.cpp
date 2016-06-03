@@ -112,7 +112,6 @@ bool cityscapes_manager::doesFileExist(const std::string &path){
 
 void cityscapes_manager::blendImages(const cv::Mat &im1, const cv::Mat &im2, cv::Mat &out, double alpha){
     cv::Mat label_cv =  im1;
-    cv::cvtColor(label_cv, label_cv, cv::COLOR_GRAY2BGR);
     cv::Mat seq_cv =  im2;
     cv::Mat blended_cv;
     double beta = ( 1.0 - alpha );
@@ -120,20 +119,57 @@ void cityscapes_manager::blendImages(const cv::Mat &im1, const cv::Mat &im2, cv:
     out = blended_cv;
 }
 
-void cityscapes_manager::filterImageForIndex(cv::Mat &inout, const std::set<size_t> &index){
-    if (inout.data)
-    {
-        uchar* ptr = reinterpret_cast<uchar*>(inout.data);
-        for (int i = 0; i < inout.cols * inout.rows; i++, ptr+=1 )
-        {
-            uchar pixel = *(ptr);
+void cityscapes_manager::createColorCodedLabels(const cv::Mat &labels, cv::Mat &color_coded, std::map<unsigned char, cv::Scalar> map){
 
-            if(index.find((size_t)pixel) == index.end()){
-                *(ptr) = 255;
+    for(auto y = 0; y < labels.rows; y++){
+        for(auto x = 0; x < labels.cols; x++){
+            unsigned char label = labels.at<uchar>(y, x);
+            if(map.find(label) !=  map.end()){
+                cv::Scalar color = map.at(label);
+                (color_coded.at<cv::Vec3b>(y, x))[0] = color[0];
+                (color_coded.at<cv::Vec3b>(y, x))[1] = color[1];
+                (color_coded.at<cv::Vec3b>(y, x))[2] = color[2];
             }else{
-                *(ptr) = 0;
+                (color_coded.at<cv::Vec3b>(y, x))[0] = 255;
+                (color_coded.at<cv::Vec3b>(y, x))[1] = 255;
+                (color_coded.at<cv::Vec3b>(y, x))[2] = 255;
             }
         }
     }
 }
+
+void cityscapes_manager::filterImageForIndex(cv::Mat &inout, const std::map<unsigned char, cv::Scalar> &index){
+    for(auto y = 0; y < inout.rows; y++){
+        for(auto x = 0; x < inout.cols; x++){
+            unsigned char pixel = inout.at<uchar>(y, x);
+
+            // Create index
+            if(index.find((size_t)pixel) == index.end()){
+                inout.at<uchar>(y, x) = 255;
+            }else{
+                inout.at<uchar>(y, x) = pixel;
+            }
+        }
+    }
+
+}
+
+void cityscapes_manager::fillMaskedArea(cv::Mat &inout, const cv::Mat &mask, unsigned char fill){
+    for(auto y = 0; y < inout.rows; y++){
+        for(auto x = 0; x < inout.cols; x++){
+            unsigned char mask_val = mask.at<uchar>(y+1, x+1);
+            if(mask_val){
+                inout.at<uchar>(y, x) = fill;
+            }
+        }
+    }
+}
+
+void cityscapes_manager::fillCircleArea(cv::Mat &inout, const std::vector<cv::Point2d> &circles, unsigned char fill, size_t thickness){
+    for(auto i = 0; i < circles.size(); i++){
+            cv::circle(inout, circles.at(i), thickness, fill, CV_FILLED);
+    }
+}
+
+
 }

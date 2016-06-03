@@ -9,6 +9,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsRectItem>
 #include <QGraphicsObject>
+#include <QColor>
 #include <iostream>
 
 #include <opencv2/core.hpp>
@@ -26,26 +27,39 @@ namespace cityscapes_labeller{
 
 
 class CityScapesScene: public QGraphicsScene {
-Q_OBJECT
+    Q_OBJECT
 public:
     explicit CityScapesScene(QWidget *parent = 0);
 
+    void setDrawThickness(size_t pixel){
+        draw_thickness_ = pixel*2;
+    }
+
+    void insertCircle(size_t x, size_t y, QColor color, size_t radius);
+    void deleteAllCircleItems();
+    void setDrawColor(unsigned char r, unsigned char g, unsigned char b);
+    void sendCirclePositions();
+
 Q_SIGNALS:
-void click(cv::Point2d point);
-void rightClick(cv::Point2d point);
+    void click(cv::Point2d point);
+    void rightClick(cv::Point2d point);
+    void sendCircles(std::vector<cv::Point2d> circles);
 
 public Q_SLOTS:
-void mousePressEvent(QGraphicsSceneMouseEvent *event);
-void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void mousePressEvent(QGraphicsSceneMouseEvent *event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
 
 private:
 
-bool pressed_;
+    std::vector<QGraphicsEllipseItem *> temp_circles_;
+    bool pressed_;
+    size_t draw_thickness_;
+    QColor draw_color_;
 };
 
 class CityScapesViewer: public QGraphicsView {
-Q_OBJECT
+    Q_OBJECT
 public:
     explicit CityScapesViewer(QWidget *parent = 0);
     CityScapesViewer();

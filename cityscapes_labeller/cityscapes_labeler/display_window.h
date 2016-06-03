@@ -14,6 +14,7 @@
 #include <cityscapes_widgets.h>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <map>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -58,7 +59,7 @@ public:
 
     bool loadLabelIfAvailable(size_t seq, size_t frame_id, const std::string &city, cv::Mat &out);
 
-    void displayLabelAndSeq(const boost::filesystem::path &label_img, const boost::filesystem::path &seq_img, const std::set<size_t> filter_set);
+    void displayLabelAndSeq(const boost::filesystem::path &label_img, const boost::filesystem::path &seq_img, const std::map<unsigned char, cv::Scalar> &filter_set);
 
     void countLabelledImages(const std::string &base_path, const std::string &split, const std::string &city);
 
@@ -76,10 +77,12 @@ public:
 
     void listAllLabelImages(const std::vector<boost::filesystem::path> &files, std::vector<boost::filesystem::path> &id_files);
 
+    void setupIndexMap();
+
 
 public Q_SLOTS:
     void selectRegion(cv::Point2d point);
-    void eraseRegion(cv::Point2d point);
+    void eraseRegion(std::vector<cv::Point2d> circles);
 
 private slots:
 
@@ -93,12 +96,21 @@ private slots:
 
     void on_reset_button_clicked();
 
+    void on_label_type_combo_activated(const QString &arg1);
+
 private:
     Ui::display_window *ui;
 
     cv::Mat label_image_org_;
     cv::Mat label_image;
     cv::Mat seq_image;
+    cv::Mat color_coded_;
+
+    // Undo variables
+    bool last_action_was_area_;
+    cv::Mat last_area_;
+    unsigned char last_area_label_;
+
 
     cityscapes_labeller::cityscapes_manager manager;
     std::vector<boost::filesystem::path> cities;
@@ -118,10 +130,14 @@ private:
 
     std::set<size_t> filter_set_;
 
-    std::set<std::pair<unsigned int, unsigned int> > last_area_;
+    std::map<unsigned char, cv::Scalar> index_color_map_;
+    std::map<std::string, unsigned char > index_string_map_;
 
     size_t draw_thickness_;
+    unsigned char draw_label_;
+    unsigned char draw_label_org_;
     bool delete_;
+    bool draw_static_;
 };
 
 #endif // DISPLAY_WINDOW_H

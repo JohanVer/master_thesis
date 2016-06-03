@@ -90,10 +90,18 @@
           </item>
           <item>
            <property name="text">
+            <string>Static</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
             <string>Add</string>
            </property>
           </item>
          </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="label_type_combo"/>
         </item>
         <item>
          <widget class="QScrollBar" name="draw_thickness_slider">

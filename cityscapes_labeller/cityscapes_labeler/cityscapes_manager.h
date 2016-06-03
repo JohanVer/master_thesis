@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <set>
 #include <iomanip>
+#include <map>
+#include <vector>
 
 // Opencv
 #include <opencv2/core.hpp>
@@ -43,7 +45,13 @@ public:
 
     void blendImages(const cv::Mat &im1, const cv::Mat &im2, cv::Mat &out, double alpha);
 
-    void filterImageForIndex(cv::Mat &inout, const std::set<size_t> &index);
+    void filterImageForIndex(cv::Mat &inout, const std::map<unsigned char, cv::Scalar> &index);
+
+    void createColorCodedLabels(const cv::Mat &labels, cv::Mat &color_coded, std::map<unsigned char, cv::Scalar> map);
+
+    void fillMaskedArea(cv::Mat &inout, const cv::Mat &mask, unsigned char fill);
+
+    void fillCircleArea(cv::Mat &inout, const std::vector<cv::Point2d> &circles, unsigned char fill, size_t thickness);
 
 };
 
